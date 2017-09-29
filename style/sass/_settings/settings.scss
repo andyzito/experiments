@@ -1,0 +1,19 @@
+.settings-menu {
+  width: 100%;
+  height: 100%;
+  background-color: orange;
+
+  .setting {
+    width: 100%;
+    font-size: 1.2rem;
+
+    label {
+      display: block;
+      padding: 0.5rem;
+
+      &:hover {
+        background-color: rgba(0,0,0,0.1);
+      }
+    }
+  }
+}
