@@ -8,7 +8,7 @@
       integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
       crossorigin="anonymous"></script>
     <script src="https://d3js.org/d3.v4.js"></script>
-    <script src="main.js"></script>
+    <script src="../../demos/d3_frequency/main.js"></script>
   </head>
 
   <body>
