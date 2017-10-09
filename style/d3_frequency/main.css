@@ -11,13 +11,11 @@
       .settings-menu .setting label:hover {
         background-color: rgba(0, 0, 0, 0.1); }
 
-html {
-  font-family: sans-serif; }
-
 html,
 body {
   margin: 0;
-  padding: 0; }
+  padding: 0;
+  font-family: sans-serif; }
 
 .main {
   display: inline-block;

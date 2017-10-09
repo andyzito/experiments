@@ -4,9 +4,12 @@ var gulp = require('gulp');
 var sass = require('gulp-sass');
 
 gulp.task('sass', function () {
-  return gulp.src('./sass/d3_frequency/main.scss')
+  gulp.src('./sass/d3_frequency/main.scss')
     .pipe(sass().on('error', sass.logError))
     .pipe(gulp.dest('./d3_frequency'));
+  gulp.src('./sass/markov/main.scss')
+    .pipe(sass().on('error', sass.logError))
+    .pipe(gulp.dest('./markov'));
 });
 
 gulp.task('sass:watch', function () {
