@@ -1,1 +1,8 @@
 @import '../base.scss';
+
+.chart-sunburst {
+  path {
+    fill: white;
+    stroke: black;
+  }
+}

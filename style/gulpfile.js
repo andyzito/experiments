@@ -13,5 +13,5 @@ gulp.task('sass', function () {
 });
 
 gulp.task('sass:watch', function () {
-  gulp.watch('./sass/d3_frequency/**/*.scss', ['sass']);
+  gulp.watch('./sass/**/*.scss', ['sass']);
 });
