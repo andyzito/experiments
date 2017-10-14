@@ -67,3 +67,7 @@ textarea, .chart-wrapper {
   fill: white; }
   .arc.active, .arc.depth-0 {
     fill: lightblue; }
+
+.arc-label {
+  text-anchor: middle;
+  dominant-baseline: central; }

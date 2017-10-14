@@ -54,10 +54,6 @@ $(document).ready(function() {
                   .range([0, SB.dim.radius]);
     SB.color = d3.scaleOrdinal(d3.schemeCategory20);
     SB.nformat = d3.format('.2%');
-    // SB.luminance = d3.scaleSqrt()
-    //                   .domain([0, 1e6])
-    //                   .range([90, 20])
-    //                   .clamp(true);
 
     SB.wrapper = SB.svg
                   .append('g')
@@ -75,7 +71,9 @@ $(document).ready(function() {
                         .style("font-size", "2rem");
 
     SB.arc = d3.arc()
-        .startAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, SB.scaleX(d.x0))); })
+        .startAngle(function(d) {
+          return Math.max(0, Math.min(2 * Math.PI, SB.scaleX(d.x0)));
+        })
         .endAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, SB.scaleX(d.x1))); })
         .innerRadius(function(d) { return Math.max(0, SB.scaleY(d.y0)); })
         .outerRadius(function(d) { return Math.max(0, SB.scaleY(d.y1)); });
@@ -89,7 +87,6 @@ $(document).ready(function() {
         .data(SB.layout(SB.data).descendants())
       .enter().append("path")
         .attr("d", SB.arc)
-        // .attr("class", "arc")
         .attr("class", function(d) { return [d.data.name, "depth-" + d.depth, "height-" + d.height, "arc"].join(' '); })
         .on("mouseenter", function(d) {
           d3.selectAll('.arc:not(.depth-0)').classed('active', false);
@@ -135,43 +132,22 @@ $(document).ready(function() {
         //     return SB.color(d.data.name);
         //   }
         // })
-      // .append("text")
-      //   .text(function(d) {
-      //     if (d.parent !== null) {
-      //       return d.data.name + "\n" + SB.nformat(d.value/d.parent.value);
-      //     } else {
-      //       return d.data.name + "\n" + SB.nformat(1);
-      //     }
-      //   });
-
-      function computeTextRotation(d) {
-        let x = SB.scaleX(d.x0 + ((d.x1 - d.x0)/2));
-      	return x*180/Math.PI - 90
-      }
 
       SB.arcGroup.selectAll("text")
-          .data(SB.data.descendants())
+          .data(SB.layout(SB.data).descendants())
         .enter().append("text")
-          .attr("transform", function(d) {
-            // return "rotate(" + SB.scaleX(d.x1) + ")";
-            return "rotate(" + computeTextRotation(d) + ")";
-          })
+          .attr("class", "arc-label")
           .attr("x", function(d) {
-            return SB.scaleY(d.y0);
+            return SB.arc.centroid(d)[0];
           })
-          // .attr("dx", "")
-          // .attr()
+          .attr("y", function(d) {
+            return SB.arc.centroid(d)[1];
+          })
           .text(function(d) {
-            return d.data.name;
+            if (d.depth < 2) {
+              return d.data.name;
+            }
           })
-          // .attr("x", function(d) {
-          //   console.log(SB.scaleX(d.x1));
-          //   return SB.scaleX(d.x1)
-          // })
-          // .attr("y", function(d) {
-          //   return SB.scaleY(d.y0)
-          // })
-
   }
 
   SB.updateChart = function() {
