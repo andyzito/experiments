@@ -72,22 +72,15 @@ function markovModel(source) {
     return randArrayChoice(Object.keys(afterTypes));
   }
 
-  this.getHierarchy = function(typename, n) {
+  this.getHierarchy = function(typename, value, depth, limit) {
     let result = { };
     let type = this.getType(typename);
-    if (typeof type === 'undefined') {
-      return;
-    }
     result.name = typename;
-    result.value = type.tokenCount;
-    if (n > 1) {
+    result.value = value;
+    if (depth > 1 && typeof type !== 'undefined' && value >= limit) {
       result.afterTypes = [ ];
       for (var key in type.afterTypes) {
-        if (key === 'undefined' || typeof key === 'undefined') {
-          // console.log('The next one is UNDEFINED OH NO');
-          // console.log(M.getType(typename));
-        }
-        result.afterTypes.push(this.getHierarchy(key, n-1));
+        result.afterTypes.push(this.getHierarchy(key, type.afterTypes[key], depth-1, limit));
       }
     }
     return result;

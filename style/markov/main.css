@@ -56,6 +56,14 @@ textarea, .chart-wrapper {
     width: 100%;
     height: 100%; }
 
+.chart-wrapper {
+  height: 95%; }
+
 .chart-sunburst path {
   fill: white;
   stroke: black; }
+
+.arc {
+  fill: white; }
+  .arc.active, .arc.depth-0 {
+    fill: lightblue; }

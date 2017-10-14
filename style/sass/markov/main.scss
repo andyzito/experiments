@@ -1,8 +1,21 @@
 @import '../base.scss';
 
+.chart-wrapper {
+  height: 95%;
+}
+
 .chart-sunburst {
   path {
     fill: white;
     stroke: black;
+  }
+}
+
+.arc {
+  fill: white;
+
+  &.active,
+  &.depth-0 {
+    fill: lightblue;
   }
 }
