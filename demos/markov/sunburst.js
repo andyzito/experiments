@@ -19,10 +19,8 @@ SB.mar = {
 
 $(document).ready(function() {
 
-  SB.getData = function() {
-    let startWord = "off";
-    let data = M.getHierarchy(startWord, M.getType(startWord).tokenCount, 3, 0);
-    SB.Sentence.locked.push(startWord);
+  SB.getData = function(word) {
+    let data = M.getHierarchy(word, M.getType(word).tokenCount, 3, 0);
     this.data = d3.hierarchy(data, function(d) { return d.afterTypes; });
     this.data.sum(function(d) {
       if (!d.hasOwnProperty('afterTypes')) {
@@ -34,6 +32,36 @@ $(document).ready(function() {
     this.data.sort(function(a,b) {
       return b.value - a.value;
     })
+  }
+
+  SB.lastWord = function() {
+    if (SB.Sentence.locked.length > 1) {
+      SB.Sentence.locked.pop();
+      let startWord = SB.Sentence.locked[SB.Sentence.locked.length-1];
+      SB.Sentence.active = [ ];
+      SB.getData(startWord);
+      SB.updateChart();
+      SB.updateSentence();
+    }
+  }
+
+  SB.nextWord = function(d) {
+    let startWord = SB.Sentence.active[SB.Sentence.active.length-1];
+    SB.Sentence.locked= SB.Sentence.locked.concat(SB.Sentence.active);
+    SB.Sentence.active = [ ];
+    SB.getData(startWord);
+    SB.updateChart();
+
+    // SB.svg.transition()
+    //       .duration(750)
+    //       .tween("scale", function() {
+    //         var xd = d3.interpolate(SB.scaleX.domain(), [d.x0, d.x1]),
+    //             yd = d3.interpolate(SB.scaleY.domain(), [d.y0, 1]),
+    //             yr = d3.interpolate(SB.scaleY.range(), [d.y0 ? 20 : 0, SB.dim.radius]);
+    //         return function(t) { SB.scaleX.domain(xd(t)); SB.scaleY.domain(yd(t)).range(yr(t)); };
+    //       })
+    //     .selectAll(".arc")
+    //       .attrTween("d", function(d) { return function() { return SB.arc(d); }; });
   }
 
   SB.initChart = function() {
@@ -51,7 +79,7 @@ $(document).ready(function() {
     SB.scaleX = d3.scaleLinear()
                   .range([0, 2 * Math.PI]);
     SB.scaleY = d3.scaleSqrt()
-                  .range([0, SB.dim.radius]);
+                  .range([20, SB.dim.radius]);
     SB.color = d3.scaleOrdinal(d3.schemeCategory20);
     SB.nformat = d3.format('.2%');
 
@@ -65,9 +93,9 @@ $(document).ready(function() {
     SB.layer2 = SB.wrapper.append('g').attr("class", "layer-2");
 
     SB.sentence = SB.svg.append("text")
-                        .text(SB.Sentence.getContent())
-                        .attr("x", SB.dim.width/2 - 50)
+                        .attr("x", $(".chart-sunburst").width()/2)
                         .attr("y", $(".chart-sunburst").height() -10)
+                        .attr("class", "sentence")
                         .style("font-size", "2rem");
 
     SB.arc = d3.arc()
@@ -82,9 +110,21 @@ $(document).ready(function() {
     SB.arcGroup = SB.layer1.append('g')
               .attr('class', 'arcs')
               .attr('transform', 'translate(' + SB.dim.width/2 + ',' + SB.dim.height/2 + ')');
+    SB.allArcs = SB.arcGroup.selectAll("path.arc");
+    SB.labels = SB.arcGroup.selectAll("text.arc-label");
+    SB.centerBack = SB.arcGroup.append("circle")
+                      .attr("class", "center-back-button")
+                      .attr("r", SB.scaleY.range()[0])
+                      .on("click", SB.lastWord)
+  }
 
-    SB.arcGroup.selectAll("path")
-        .data(SB.layout(SB.data).descendants())
+  SB.updateSentence = function() {
+    SB.sentence.text(SB.Sentence.getContent());
+  }
+
+  SB.updateChart = function() {
+    // SB.allArcs.data([ ]).exit().remove();
+    SB.allArcs.data(SB.layout(SB.data).descendants())
       .enter().append("path")
         .attr("d", SB.arc)
         .attr("class", function(d) { return [d.data.name, "depth-" + d.depth, "height-" + d.height, "arc"].join(' '); })
@@ -105,26 +145,15 @@ $(document).ready(function() {
               SB.Sentence.active[i-1] = currentNode.data.name;
               currentNode = currentNode.parent;
             }
-            SB.updateChart();
+            SB.updateSentence();
           }
         })
         .on("mouseleave", function(d) {
           d3.selectAll('.arc:not(.depth-0)').classed('active', false);
           SB.Sentence.active = [ ];
-          SB.updateChart();
+          SB.updateSentence();
         })
-        .on("click", function(d) {
-          SB.svg.transition()
-                .duration(750)
-                .tween("scale", function() {
-                  var xd = d3.interpolate(SB.scaleX.domain(), [d.x0, d.x1]),
-                      yd = d3.interpolate(SB.scaleY.domain(), [d.y0, 1]),
-                      yr = d3.interpolate(SB.scaleY.range(), [d.y0 ? 20 : 0, SB.dim.radius]);
-                  return function(t) { SB.scaleX.domain(xd(t)); SB.scaleY.domain(yd(t)).range(yr(t)); };
-                })
-              .selectAll(".arc")
-                .attrTween("d", function(d) { return function() { return SB.arc(d); }; });
-        })
+        .on("click", SB.nextWord)
         // .style("fill", function(d) {
         //   if (d.parent !== null) {
         //     return SB.color((d.children ? d : d.parent).data.name);
@@ -133,30 +162,27 @@ $(document).ready(function() {
         //   }
         // })
 
-      SB.arcGroup.selectAll("text")
-          .data(SB.layout(SB.data).descendants())
-        .enter().append("text")
-          .attr("class", "arc-label")
-          .attr("x", function(d) {
-            return SB.arc.centroid(d)[0];
-          })
-          .attr("y", function(d) {
-            return SB.arc.centroid(d)[1];
-          })
-          .text(function(d) {
-            if (d.depth < 2) {
-              return d.data.name;
-            }
-          })
+    // SB.labels.data([ ]).exit().remove();
+    SB.labels.data(SB.layout(SB.data).descendants())
+      .enter().append("text")
+        .attr("class", "arc-label")
+        .attr("x", function(d) {
+          return SB.arc.centroid(d)[0];
+        })
+        .attr("y", function(d) {
+          return SB.arc.centroid(d)[1];
+        })
+        .text(function(d) {
+          if (d.depth < 2) {
+            return d.data.name;
+          }
+        })
   }
 
-  SB.updateChart = function() {
-    SB.sentence.text(SB.Sentence.getContent());
-
-  }
-
-  SB.getData();
+  SB.getData("off");
+  SB.Sentence.locked.push("off");
   SB.initChart();
   SB.updateChart();
+  SB.updateSentence();
 
 });

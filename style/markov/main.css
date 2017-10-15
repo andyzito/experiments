@@ -71,3 +71,6 @@ textarea, .chart-wrapper {
 .arc-label {
   text-anchor: middle;
   dominant-baseline: central; }
+
+.sentence {
+  text-anchor: middle; }
