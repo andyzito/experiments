@@ -91,8 +91,9 @@ function markovModel(source) {
       string = this.source;
     }
     this.source = string;
-    string = "BOS " + string + " EOS";
+    // string = "BOS " + string + " EOS";
     string = stripString(string).split(/\s/);
+    console.log(string);
 
     for (var i = 0; i < string.length; i++) {
       let thisType = string[i];
@@ -167,12 +168,22 @@ const patterns = [
   // },
   {
     type: 'remove',
-    pattern: /'|’|"|\*|‘|\.|“|”/g,
+    pattern: /'|’|"|\*|‘|“|”/g,
   },
   {
     type: 'replace',
-    pattern: /,|\?|!|\*|—|;|:|\(|\)|\n|\r/g,
+    pattern: /\?|!|\*|—|;|:|\(|\)|\n|\r/g,
     replace: ' ',
+  },
+  {
+    type: 'replace',
+    pattern: /\./g,
+    replace: ' . ',
+  },
+  {
+    type: 'replace',
+    pattern: /,/g,
+    replace: ' , ',
   },
   {
     type: 'replace',
@@ -190,6 +201,7 @@ function stripString(string) {
       string = string.replace(p.pattern, p.replace);
     }
   }
+  console.log(string.toLowerCase());
   return string.toLowerCase()
 }
 
