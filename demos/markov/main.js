@@ -93,7 +93,7 @@ function markovModel(source) {
     this.source = string;
     // string = "BOS " + string + " EOS";
     string = stripString(string).split(/\s/);
-    console.log(string);
+    // console.log(string);
 
     for (var i = 0; i < string.length; i++) {
       let thisType = string[i];
@@ -201,7 +201,7 @@ function stripString(string) {
       string = string.replace(p.pattern, p.replace);
     }
   }
-  console.log(string.toLowerCase());
+  // console.log(string.toLowerCase());
   return string.toLowerCase()
 }
 
