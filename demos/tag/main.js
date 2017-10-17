@@ -329,9 +329,10 @@ $(document).ready(function() {
   window.T = new markovModel(tagdata);
   T.train();
 
-  log("Model trained");
+  log("Model trained on sentence \"" + data.map(function(t,i) {return t.token}).join(' ') + '"');
   let test = "A large cat licks a small dog.";
   log("Testing on sentence \"" + test + '"');
+  log("");
   let tagged = M.tag(stripString(test).split(/\s/));
   log("");
   for (var i=0; i<tagged.length; i++) {
