@@ -65,7 +65,6 @@ function compoundProbablities(matrices) {
 }
 
 function mostLikelyChain(initialState, model, steps, finalState) {
-  // console.log(initialState, model, steps);
   let possibleStates = Object.keys(model.types);
   let pile = { };
   pile[initialState] = 1;
@@ -264,27 +263,14 @@ function markovModel(source) {
   }
 
   this.fillGap = function(gap, before, after) {
+    // console.log("We're inside fillGap");
+    // console.log(gap, before, after);
     let lastTag = before.tag;
     let nextTag = after.tag;
     let gapLength = gap.length;
     log("Last tag was " + lastTag, 2);
 
     if (lastTag !== undefined && nextTag !== undefined) {
-      // let gapTagPossibilities = [ ];
-      // let possibleTags;
-      // let tempArray = [ ];
-      // possibleTags = T.getNextProbs(lastTag);
-      //
-      // Object.keys(possibleTags).map(
-      //   function(item, index) {
-      //     if (possibleTags[item] <= basicallyZero) {
-      //       delete possibleTags[item];
-      //     } else {
-      //       var tmp = { };
-      //       tmp[item] = possibleTags[item];
-      //       tempArray.push(tmp);
-      //     }
-      //   });
 
       let bestChain = mostLikelyChain(lastTag, T, gapLength, nextTag);
 
@@ -292,6 +278,8 @@ function markovModel(source) {
       chainString = chainString.split(' ');
       chainString.pop();
       chainString.shift();
+
+      // console.log(chainString);
 
       let result = [ ];
       chainString.map(function(item, index) {
@@ -315,7 +303,7 @@ function markovModel(source) {
       x.token = s[i];
       // If there is a near 100% probability of this token being a tag, give it that tag.
       let mostLikely = this.mostLikelyTag(s[i]);
-      if (mostLikely.prob > 0.99) {
+      if (typeof mostLikely !=='undefined' && mostLikely.prob > 0.99) {
         x.tag = mostLikely.tag;
       }
       result.push(x);
@@ -325,10 +313,15 @@ function markovModel(source) {
     for (var i=1; i<result.length; i++) {
       log("Checking " + result[i].token, 1);
       if (result[i].tag === undefined || !result[i].hasOwnProperty('tag')) {
-        log("This token has no assigned tag", 2);
-        let lastTag = result[i-1].tag;
-        let nextTag = result[i+1].tag;
-        result[i] = this.fillGap([result[i]], result[i-1], result[i+1])[0];
+        let lastTag = result[i-1];
+        let nextDefinedTag = result.filter(function(item, index) {
+          return item.hasOwnProperty('tag') && index > i;
+        });
+        // console.log(nextDefinedTag[0]);
+        let nextDefinedIndex = result.indexOf(nextDefinedTag[0]);
+        let nextTag = result[nextDefinedIndex];
+        let filled = this.fillGap(result.slice(i,nextDefinedIndex), lastTag, nextTag);
+        result = result.slice(0, i).concat(filled.concat(result.slice(nextDefinedIndex)))
       }
     }
     return result;
@@ -466,7 +459,7 @@ $(document).ready(function() {
   T.train();
   log("Model trained on sentence \"" + data.map(function(t,i) {return t.token}).join(' ') + '"');
 
-  let test = "A dog cat eats a dog.";
+  let test = "A dog man eats a cow.";
   log("Testing on sentence \"" + test + '"', 0, 2);
 
   let tagged = M.tag_gapfill(stripString(test).split(/\s/));
