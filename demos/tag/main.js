@@ -1,7 +1,119 @@
 const basicallyZero = 1e-100
 
-function log(s) {
-  $('.log').append(s + "\n");
+function log(s, i, n) {
+  let im = 2;
+  if (typeof n === 'undefined') {
+    n = 1;
+  }
+  if (typeof i === 'undefined') {
+    i = 0;
+  }
+  i = i*im;
+  let l = " ".repeat(i) + s + "\n".repeat(n);
+  $('.log').append(l);
+}
+
+function compoundProbablities(matrices) {
+
+  let indexes = [ ];
+  for (var m in matrices) {
+    indexes.push(0);
+  }
+  let result = [ ];
+
+  while (true) {
+    // Actual work
+    let key = [ ];
+    let product = 1;
+    let temp = { };
+    for (var q=0; q<matrices.length; q++) {
+      product = product * matrices[q][indexes[q]][Object.keys(matrices[q][indexes[q]])[0]];
+      key.push(Object.keys(matrices[q][indexes[q]])[0]);
+    }
+    temp[key.join(' ')] = product;
+    result.push(temp);
+
+    // Check
+    let check = true;
+    for (var x=0; x<matrices.length; x++) {
+      if (indexes[x] < matrices[x].length-1) {
+        check = false;
+      }
+    }
+    if (check) {
+      break;
+    }
+
+    // Update indexes
+    let thisIndex;
+    let nextIndex;
+    let thisMax;
+    for (var y=indexes.length-1; y>=0; y--) {
+      thisIndex = indexes[y];
+      nextIndex = indexes[y-1];
+      thisMax = matrices[y].length-1;
+      if (thisIndex < thisMax) {
+        indexes[y] += 1;
+        break;
+      } else {
+        indexes[y] = 0;
+      }
+    }
+  }
+
+  return result;
+}
+
+function mostLikelyChain(initialState, model, steps, finalState) {
+  // console.log(initialState, model, steps);
+  let possibleStates = Object.keys(model.types);
+  let pile = { };
+  pile[initialState] = 1;
+  let newPile = { };
+  for (var step=0; step < steps; step++) {
+    for (var key in pile) {
+      for (var i=0; i<possibleStates.length; i++) {
+        let sequenceString = "";
+        sequenceString += key;
+        sequenceString += " ";
+        sequenceString += possibleStates[i];
+
+        let lastState = key.split(' ')[key.split(' ').length-1];
+        newPile[sequenceString] = pile[key] * model.getNextProbs(lastState)[possibleStates[i]];
+      }
+    }
+    pile = { };
+    Object.assign(pile, newPile);
+    newPile = { };
+  }
+  for (var key in pile) {
+    let lastState = key.split(' ')[key.split(' ').length-1];
+    newPile[key + " " + finalState] = pile[key] * model.getNextProbs(lastState)[finalState];
+  }
+  pile = { };
+  Object.assign(pile, newPile);
+
+  let bestChain = Object.keys(pile).reduce(function(a, b) { return pile[a] > pile[b] ? a : b });
+  let tmp = { };
+  tmp[bestChain] = pile[bestChain];
+  return tmp;
+}
+
+function zipTag(a,b) {
+  if (typeof a === 'string') {
+    a = stripString(a).split(/\s/);
+  }
+  if (typeof b === 'string') {
+    b = b.split(' ');
+  }
+  let result = [ ];
+  a.map(function(t, i) {
+    let x = { };
+    x.token = t;
+    x.tag = b[i];
+    result.push(x);
+  })
+  return result;
 }
 
 function markovModel(source) {
@@ -60,6 +172,29 @@ function markovModel(source) {
     return tags;
   }
 
+  this.mostLikelyTag = function(typename) {
+    let type = this.getType(typename);
+    if (typeof type === 'undefined') {
+      return undefined;
+    }
+    let tags = Object.assign({}, type.tags);
+    let total = type.tokenCount;
+    let bestTag = "";
+    let bestProb = 0;
+
+    Object.keys(tags).map(function(item, index) {
+      if (tags[item]/total > bestProb) {
+        bestTag = item;
+        bestProb = tags[item] / total;
+      }
+    })
+
+    return {
+      tag: bestTag,
+      prob: bestProb,
+    }
+  }
+
   this.produce = function(n) {
     let sentence = [];
     let start = randArrayChoice(Object.keys(this.types));
@@ -98,16 +233,17 @@ function markovModel(source) {
   }
 
   this.train = function(data) {
+    // Data should be array of objects with token and tag props.
     if (typeof data !== 'object') {
       data = this.source;
     }
     this.source = data;
-    // data.push() = "BOS " + string + " EOS";
-    // string = stripString(string).split(/\s/);
+
+    data.push({token: "EOS", tag: "EOS"});
+    data.unshift({token: "BOS", tag: "BOS"});
 
     for (var i = 0; i < data.length; i++) {
       let thisType = data[i];
-      // if (thisType !== "bos" && thisType !== "eos") {
       let nextType = data[i+1];
       if (!this.types.hasOwnProperty(thisType.token)) {
         this.types[thisType.token] = new markovModelType(thisType.token);
@@ -127,53 +263,72 @@ function markovModel(source) {
     };
   }
 
-  this.tag = function(s) {
+  this.fillGap = function(gap, before, after) {
+    let lastTag = before.tag;
+    let nextTag = after.tag;
+    let gapLength = gap.length;
+    log("Last tag was " + lastTag, 2);
+
+    if (lastTag !== undefined && nextTag !== undefined) {
+      // let gapTagPossibilities = [ ];
+      // let possibleTags;
+      // let tempArray = [ ];
+      // possibleTags = T.getNextProbs(lastTag);
+      //
+      // Object.keys(possibleTags).map(
+      //   function(item, index) {
+      //     if (possibleTags[item] <= basicallyZero) {
+      //       delete possibleTags[item];
+      //     } else {
+      //       var tmp = { };
+      //       tmp[item] = possibleTags[item];
+      //       tempArray.push(tmp);
+      //     }
+      //   });
+
+      let bestChain = mostLikelyChain(lastTag, T, gapLength, nextTag);
+
+      let chainString = Object.keys(bestChain)[0];
+      chainString = chainString.split(' ');
+      chainString.pop();
+      chainString.shift();
+
+      let result = [ ];
+      chainString.map(function(item, index) {
+        result.push({
+          tag: item,
+          token: gap[index].token,
+        })
+      })
+
+      return result
+    }
+  }
+
+  this.tag_gapfill = function(s) {
+    s.push("EOS");
+    s.unshift("BOS");
     log("Tagging function received input [" + s + "]");
-    let result = []
+    let result = [ ];
     for (var i=0; i<s.length; i++) {
       let x = { };
       x.token = s[i];
-      if (this.types.hasOwnProperty(s[i])) {
-        if (Object.keys(this.getTagProbs(s[i])).length === 1) {
-          x.tag = Object.keys(this.getTags(s[i]))[0];
-        }
+      // If there is a near 100% probability of this token being a tag, give it that tag.
+      let mostLikely = this.mostLikelyTag(s[i]);
+      if (mostLikely.prob > 0.99) {
+        x.tag = mostLikely.tag;
       }
       result.push(x);
     }
-    log("Tags assigned to tokens with 100% probability");
-    log("");
+    log("Tags assigned to tokens with 100% probability", 0, 2);
     log("Scan for untagged tokens...")
-    for (var i=1; i<result.length -1; i++) {
-      log(" Checking " + result[i].token);
+    for (var i=1; i<result.length; i++) {
+      log("Checking " + result[i].token, 1);
       if (result[i].tag === undefined || !result[i].hasOwnProperty('tag')) {
-        log("  This token has no assigned tag");
+        log("This token has no assigned tag", 2);
         let lastTag = result[i-1].tag;
-        log("  Last tag was " + lastTag);
-        if (lastTag !== undefined) {
-          let possibleTags = T.getNextProbs(lastTag);
-          Object.keys(possibleTags).map(function(item, index) {
-            if (possibleTags[item] <= basicallyZero) {
-              delete possibleTags[item];
-            }
-          });
-          log("  Possible tags for " + result[i].token + " are " + Object.keys(possibleTags));
-          let bestTag = "";
-          let bestProb = 0;
-          let nextTag = result[i+1].tag;
-          log("  The next tag is " + nextTag);
-          for (var thisTag in possibleTags) {
-            let abProb = possibleTags[thisTag]; // prob of last tag -> this tag
-            let bcProb = T.getNextProbs(thisTag)[nextTag]; // prob of this tag -> next tag
-            log("  " + [lastTag, abProb, thisTag, bcProb, nextTag].join(' -> '));
-            if (abProb * bcProb > bestProb) {
-              bestProb = abProb * bcProb;
-              bestTag = thisTag;
-            }
-          }
-          log("  Best tag was " + bestTag + " with a compound probability of " + bestProb);
-          // thisTag = Object.keys(thisTag).reduce(function(a, b){ return thisTag[a] > thisTag[b] ? a : b });
-          result[i].tag = bestTag;
-        }
+        let nextTag = result[i+1].tag;
+        result[i] = this.fillGap([result[i]], result[i-1], result[i+1])[0];
       }
     }
     return result;
@@ -291,29 +446,10 @@ $(document).ready(function() {
   $('.main').append('<pre class="log"></pre>');
 
   // let data = "A large cat licks a small dog.";
-  let data = [
-    { token: "a",
-      tag: "D",
-    },
-    // { token: "large",
-    //   tag: "ADJ",
-    // },
-    { token: "cat",
-      tag: "N",
-    },
-    { token: "licks",
-      tag: "V",
-    },
-    { token: "a",
-      tag: "D",
-    },
-    { token: "small",
-      tag: "ADJ",
-    },
-    { token: "dog",
-      tag: "N",
-    },
-  ]
+  let tokenstring = "A pink cat licks a small dog. A big giraffe eats a dog taco. A rabbit jumps. A cute fluffy platypus watches TV. Why are we here?";
+  // FS = full stop
+  let tagstring = "D J N V D J N FS D J N V D J N FS D N V FS D J J N V N FS WH V N P Q";
+  let data = zipTag(tokenstring, tagstring);
 
   window.M = new markovModel(data);
   M.train();
@@ -328,13 +464,12 @@ $(document).ready(function() {
 
   window.T = new markovModel(tagdata);
   T.train();
-
   log("Model trained on sentence \"" + data.map(function(t,i) {return t.token}).join(' ') + '"');
-  let test = "A large cat licks a small dog.";
-  log("Testing on sentence \"" + test + '"');
-  log("");
-  let tagged = M.tag(stripString(test).split(/\s/));
-  log("");
+
+  let test = "A dog cat eats a dog.";
+  log("Testing on sentence \"" + test + '"', 0, 2);
+
+  let tagged = M.tag_gapfill(stripString(test).split(/\s/));
   for (var i=0; i<tagged.length; i++) {
     log(tagged[i].token + "\t: " + tagged[i].tag);
   }
