@@ -80,7 +80,7 @@ function markovModel(source) {
     if (depth > 1 && typeof type !== 'undefined' && value >= limit) {
       result.afterTypes = [ ];
       for (var key in type.afterTypes) {
-        result.afterTypes.push(this.getHierarchy(key, type.afterTypes[key], depth-1, limit));
+        result.afterTypes.push(this.getHierarchy(key, type.afterTypes[key]/type.tokenCount, depth-1, limit));
       }
     }
     return result;
